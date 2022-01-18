@@ -6,6 +6,7 @@ const mongoose = require('mongoose')
 const mongoDBSession = require('connect-mongodb-session')(session)
 const bcrypt = require('bcryptjs')
 
+
 const UserModel = require('./models/user')
 
 mongoose.connect('mongodb+srv://lisa:lisa@cluster0.y7ebr.mongodb.net/sessions?retryWrites=true&w=majority')
@@ -30,12 +31,14 @@ app.use(
 
     })
 )
-// app.get('/',(req,res)=>{
-//     req.session.isAuth=true
-//     console.log(req.session)
-//     console.log(req.session.id)
-//     res.send('Hello')
-// });
+
+const isAuth =(req,res,next)=>{
+   if(req.session.isAuth){
+       next()
+   }else{
+       res.redirect('/login')
+   }
+}
 app.get('/',(req,res)=>{
     res.render('landing')
 })
@@ -44,7 +47,26 @@ app.get('/login',(req,res)=>{
     res.render('login')
 })
 
-app.post("/login",(req,res)=>{})
+app.post("/login",async (req,res)=>{
+    const {email, password}=req.body;
+    // console.log(email)
+    // console.log(password)
+    const user = await UserModel.findOne({email})
+
+    if(!user){
+        return res.redirect('/login');
+    } 
+    console.log(user)
+
+    const isMatch = user.password === password ;
+    // const isMatch = true
+
+    if(!isMatch){
+        return res.redirect('/login')
+    }
+    req.session.isAuth=true
+    res.redirect('/dashboard')
+})
 
 app.get('/register',(req,res)=>{
     res.render('register')
@@ -54,16 +76,19 @@ app.post("/register", async (req,res)=>{
     const {username,email,password} = req.body;
     let user = await UserModel.findOne({email})
     if(user){
-        return res.redirect('/register')
+         return res.redirect('/register')
     }
+
     
-    
-   const hashedPsw = await bcrypt.hash(password,12) 
+//    const hashedPsw = await bcrypt.hash(password,10)
+  
+   
+   
 
     user = new UserModel({
         username,
         email,
-        hashedPsw
+        password,
     });
 
     await user.save()
@@ -71,7 +96,14 @@ app.post("/register", async (req,res)=>{
     res.redirect("/login");
 })
 
-app.get("/dashboard",(req,res)=>{
+app.get("/dashboard",isAuth, (req,res)=>{
     res.render("dashboard")
+})
+
+app.post('/logout',(req,res)=>{
+    req.session.destroy((err)=>{
+        if(err) throw err;
+        res.redirect('/')
+    })
 })
 app.listen(5000,console.log('running'))
