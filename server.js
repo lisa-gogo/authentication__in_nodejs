@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs')
 
 const UserModel = require('./models/user')
 
+const port = process.env.PORT || 5000
 mongoose.connect('mongodb+srv://lisa:lisa@cluster0.y7ebr.mongodb.net/sessions?retryWrites=true&w=majority')
 .then(res=>{
     console.log('MongoDB connected')
@@ -106,4 +107,4 @@ app.post('/logout',(req,res)=>{
         res.redirect('/')
     })
 })
-app.listen(5000,console.log('running'))
+app.listen(port,console.log('running'))
